@@ -1,0 +1,61 @@
+#!/usr/bin/seed
+
+const MALUS_NAME = "malus";
+
+const Gio = imports.gi.Gio;
+const GLib = imports.gi.GLib;
+
+var gfile = Gio.file_new_for_commandline_arg (Seed.argv[1]);
+
+var app_name = gfile.get_basename ();
+if (app_name == MALUS_NAME) {
+	print ("This program cannot be run directly. You must call it as a symbolic link denoting the programm name.");
+	Seed.quit (-1);
+}
+GLib.set_prgname (app_name);
+
+gfile = gfile.get_parent ();
+var bin_dir = gfile.get_path ();
+if (gfile.get_basename () == "bin")
+	gfile = gfile.get_parent ();
+var base_dir = gfile.get_path ();
+var malus_share = GLib.build_filenamev ([base_dir, "share", MALUS_NAME]);
+var app_share = GLib.build_filenamev ([base_dir, "share", app_name]);
+
+imports.searchPath.unshift (GLib.build_filenamev ([malus_share, "parts"]));
+const Context = imports.malus.context;
+
+Context.paths.bin = bin_dir;
+Context.paths.base = base_dir;
+Context.paths.malus_share = malus_share;
+Context.paths.share = app_share;
+
+Context.paths.user_share = GLib.build_filenamev ([GLib.get_user_data_dir (), app_name]);
+Context.paths.config = GLib.build_filenamev ([GLib.get_user_config_dir (), app_name]);
+
+gfile = Gio.file_new_for_path (Context.paths.user_data);
+if (!gfile.query_exists ())
+	gfile.make_directory_with_parents (null, null);
+gfile = Gio.file_new_for_path (Context.paths.config);
+if (!gfile.query_exists ())
+	gfile.make_directory_with_parents (null, null);
+
+const Application = imports.malus.application;
+Context.application = new Application.Application (Context.paths.share);
+
+const Settings = imports.malus.settings;
+Context.settings = new Settings.Settings ();
+
+const Modules = imports.malus.module_manager;
+Context.modules = new Modules.ModuleManager ();
+Context.modules.add_extension_point ("/", {
+	is_singular: true,
+	test_func: function (obj) { return typeof obj.run === "function"; }
+});
+Context.modules.update ();
+Context.modules.add_extension_listener ("/", function (pt, ext) {
+	Context.modules.get_extension_object (ext).run ();
+});
+
+Context.settings.save ();
+

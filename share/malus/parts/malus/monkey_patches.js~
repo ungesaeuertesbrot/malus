@@ -1,0 +1,12 @@
+String.prototype.format = function () {
+	var formatted = this;
+	for (let arg in arguments)
+		formatted = formatted.replace ("{" + arg + "}", arguments[arg]);
+	return formatted;
+};
+
+
+Function.prototype.bind_once = function () {
+	
+};
+
