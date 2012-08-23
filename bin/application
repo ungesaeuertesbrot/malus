@@ -1,0 +1,5 @@
+#!/bin/sh
+
+export MALUS_PREFIX=/home/schoel/Projekte/malus
+gjs $MALUS_PREFIX/share/malus/parts/malus/malus.js -n APPNAME
+
