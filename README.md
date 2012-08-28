@@ -84,9 +84,8 @@ Running an Application
 
 Running an application using MALUS involves these steps:
 
-1. Launch the malus binary which is located at
-   $MALUS_SHARE/parts/malus/malus.js. One to Three pieces of information are
-   required for this step. These are:
+1. Launch the malus binary which is located at MALUS_SHARE/parts/malus/malus.js.
+   One to Three pieces of information are required for this step. These are:
     1. The prefix MALUS is installed in. This may be passed on the command line
        using the `-m` option (e.g. `malus -m /opt`). If this option is not
        present MALUS will take the value of the `MALUS_PREFIX` environment
@@ -100,9 +99,11 @@ Running an application using MALUS involves these steps:
        to the `-n` command line option or the value of the `MALUS_APP_NAME`
        environment valiable, the former taking precedent over the latter. If
        none of the two is present, MALUS will fail with an error.
+2. MALUS will set up the context (`imports.malus.context`) and calculate the
+   paths in context.paths based on the information from step one.
 2. MALUS will then create the Application object and read the basic information
-   on the application from $MALUS\_APP\_PREFIX/share/$MALUS\_APP\_NAME/info.js. This
-   file must contain an unnamed JSON-object which shall carry the following
+   on the application from $MALUS\_APP\_PREFIX/share/$MALUS\_APP\_NAME/info.js.
+   This file must contain an unnamed JSON-object which shall carry the following
    fields:
     1. `name`: The name of the application, usually the same as passed to the
        MALUS executable in the step above.
