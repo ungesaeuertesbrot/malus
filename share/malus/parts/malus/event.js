@@ -67,6 +67,9 @@ const event_funcs = {
 };
 
 
+/**
+ * Internal utility function for actually modifying a prototype.
+ */
 function _add_event_funcs (proto)
 {
 	for (func in event_funcs)
@@ -75,7 +78,15 @@ function _add_event_funcs (proto)
 }
 
 
-
+/**
+ * Add a number of events to a prototype. This will also automatically add the
+ * required functions from event_funcs to the prototype if they are not there
+ * yet.
+ *
+ * @arg {proto} Prototype to modify.
+ * @arg {names} An array of strings designating the names of events to be added
+ *              to the prototype.
+ */
 function add_events (proto, names)
 {
 	if (typeof proto != "object")
@@ -87,6 +98,16 @@ function add_events (proto, names)
 		proto._events[name] = {listeners: []};
 }
 
+
+/**
+ * Add a single events to a prototype. This will also automatically add the
+ * required functions from event_funcs to the prototype if they are not there
+ * yet.
+ *
+ * @arg {proto} Prototype to modify.
+ * @arg {name}  A string designating the name of the events to be added to the
+ *              prototype.
+ */
 function add_event (proto, name)
 {
 	add_events (proto, [name]);
