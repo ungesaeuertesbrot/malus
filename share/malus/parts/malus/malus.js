@@ -7,7 +7,6 @@ const MALUS_NAME = "malus";
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 
-
 const cmd_line_args = {
 	'-': function () true,
 	'n': function (name) {app_name = name;},
@@ -38,8 +37,10 @@ for (let i = 0; i < ARGV.length; ) {
 
 if (!malus_prefix) {
 	malus_prefix = GLib.getenv ("MALUS_PREFIX");
-	if (!malus_prefix)
+	if (!malus_prefix) {
 		malus_prefix = "/usr/local";
+		log ("No MALUS prefix defined. Falling back to default of " + malus_prefix);
+	}
 }
 if (!app_prefix) {
 	app_prefix = GLib.getenv ("MALUS_APP_PREFIX");

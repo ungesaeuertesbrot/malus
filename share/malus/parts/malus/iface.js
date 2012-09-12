@@ -7,6 +7,13 @@
  * disregards its type), "array" which test with isArray and "event" which
  * designates an event defined through the MALUS event mechanism.
  *
+ * EXAMPLE:
+ *     {
+ *         "foo": "function",
+ *         "bar": "string",
+ *         "baz": ""         // must exist but can be of any type
+ *     }
+ *
  * @arg {obj}   The object instance to test.
  * @arg {iface} An object representing the interface to test against.
  * @returns     true if the object instance conforms to the interface.
