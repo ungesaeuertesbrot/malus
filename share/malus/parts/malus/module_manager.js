@@ -9,12 +9,13 @@ const Gio = imports.gi.Gio;
 
 const Context = imports.malus.context;
 
+
+/**
+ * Create a new Instance.
+ */
 function ModuleManager ()
 {
-	this.paths = {
-		system: GLib.build_filenamev ([Context.paths.share, "modules"]),
-		user: GLib.build_filenamev ([Context.paths.user_share, "modules"])
-	}
+	this._init ();
 }
 
 ModuleManager.prototype = {
@@ -23,11 +24,70 @@ ModuleManager.prototype = {
 //	disabled: [],
 	points: {},
 	
+	_init: function () {
+		this._paths = {
+			system: GLib.build_filenamev ([Context.paths.share, "modules"]),
+			user: GLib.build_filenamev ([Context.paths.user_share, "modules"])
+		}
+		
+		this.update ();
+	},
+	
+	
+	/**
+	 * Internal helper function.
+	 */
+	_init_extension_point: function (pt) {
+		if (!this.points[pt])
+			this.points[pt] = {path: "", info: {}, extensions: [], listeners: []};
+	},
+	
+	
+	/**
+	 * Internal helper function. Will set up the meta data for all extensions
+	 * points of all modules.
+	 */
+	_preload_extensions: function () {
+		for (let mod in this.modules) {
+			let info = this.modules[mod].info;
+			for (let extpt in info.extension_points) {
+				this._init_extension_point (extpt);
+				this.points[extpt].path = extpt;
+				this.points[extpt].info = info.extension_points[extpt];
+
+				let test_func = this.points[extpt].info.extension_test;
+				if (test_func === undefined && this.points[extpt].info.test_args !== undefined)
+					test_func = "malus/iface::implements_interface";
+
+				if (test_func)
+					try {
+						this.points[extpt].info.test_func = this.get_module_function (mod, test_func);
+					} catch (e) {
+						printerr ("Warning: could not get extension point test function: " + e.message);
+					}
+			}
+			
+			for (let i = 0; i < info.extensions.length; i++) {
+				let ext = info.extensions[i];
+				this._init_extension_point (ext["extends"]);
+				ext.module = mod;
+				this.points[ext["extends"]].extensions.push (ext);
+			}
+		}
+	},
+
+
+	/**
+	 * Update the internal list of available modules and extensions. This is
+	 * called automatically when creating a new instance and must be called
+	 * again each time a new modules has become available and needs to be found
+	 * by the module manager.
+	 */
 	update: function () {
 		let module_dirs = {};
 		
-		for (let dir in this.paths) {
-			let gfile = Gio.file_new_for_path (this.paths[dir]);
+		for (let dir in this._paths) {
+			let gfile = Gio.file_new_for_path (this._paths[dir]);
 			if (!gfile.query_exists (null))
 				continue;
 			let enumerator = gfile.enumerate_children ("standard::name,standard::type", 0, null, null);
@@ -51,7 +111,7 @@ ModuleManager.prototype = {
 				let info_file = GLib.file_get_contents (info_file_name);
 				var module_info = JSON.parse (info_file[1]);
 			} catch (e) {
-				printerr ("Could not load module '" + dir + "': " + e.message);
+				printerr ("Could not load module '{0}': {1}".format (dir, e.message));
 				continue;
 			}
 			if (module_info.name != dir) {
@@ -65,49 +125,31 @@ ModuleManager.prototype = {
 			};
 		}
 		
-		this.preload_extensions ();
+		this._preload_extensions ();
 	},
 	
-	init_extension_point: function (pt) {
-		if (!this.points[pt])
-			this.points[pt] = {path: "", info: {}, extensions: [], listeners: []};
-	},
 	
+	/**
+	 * Add an extension point manually.
+	 *
+	 * @arg {path} Path to the extension point.
+	 * @arg {info} Info for the extension point. This is an object corresponding
+	 *             to what would otherwise be found in the module's info.js.
+	 */
 	add_extension_point: function (path, info) {
-		this.init_extension_point (path);
+		this._init_extension_point (path);
 		this.points[path].path = path;
 		this.points[path].info = info;
 	},
 	
-	preload_extensions: function () {
-		for (let mod in this.modules) {
-			let info = this.modules[mod].info;
-			for (let extpt in info.extension_points) {
-				this.init_extension_point (extpt);
-				this.points[extpt].path = extpt;
-				this.points[extpt].info = info.extension_points[extpt];
-
-				let test_func = this.points[extpt].info.extension_test;
-				if (test_func === undefined && this.points[extpt].info.test_args !== undefined)
-					test_func = "malus/iface::implements_interface";
-
-				if (test_func)
-					try {
-						this.points[extpt].info.test_func = this.get_module_function (mod, test_func);
-					} catch (e) {
-						printerr ("Warning: could not get extension point test function: " + e.message);
-					}
-			}
-			
-			for (let i = 0; i < info.extensions.length; i++) {
-				let ext = info.extensions[i];
-				this.init_extension_point (ext["extends"]);
-				ext.module = mod;
-				this.points[ext["extends"]].extensions.push (ext);
-			}
-		}
-	},
-
+	
+	/**
+	 * Make sure a module is in a usable state. Should not normally be used
+	 * by applications.
+	 *
+	 * @arg {module} Name of the module.
+	 * @returns The module meta object.
+	 */
 	init_module: function (module) {
 		module = this.modules[module];
 		if (!module)
@@ -125,22 +167,42 @@ ModuleManager.prototype = {
 		return module;
 	},
 	
+	
+	/**
+	 * Get a specific function as defined in a specific module.
+	 *
+	 * @arg {module} Name of the module that contains the function.
+	 * @arg {func_path} Name of the function. This consists of two parts,
+	 *                  devided by a colon: The first is the namespace, i.e. the
+	 *                  path to the file that conatins the function relative to
+	 *                  the modules parts directory. The second is the name of
+	 *                  the function itself, i.e. inside that file.
+	 * @returns The corresponding function object.
+	 */
 	get_module_function: function (module, func_path) {
 		module = this.init_module (module);
 		let func_loc = func_path.split ("::");
 		try {
 			var part = imports[func_loc[0]];
 		} catch (e) {
-			throw new Error ("ModuleManager.get_module_function: Could not load containing script at " + func_path + " in module " + module.name);
+			throw new Error ("ModuleManager.get_module_function: Could not load containing script at {0} in module {1}".format (func_path, module.name));
 		}
 		if (!part[func_loc[1]])
-			throw new Error ("ModuleManager.get_module_function: No such function in script at " + func_path + " in module " + module.name);
+			throw new Error ("ModuleManager.get_module_function: No such function in script at {0} in module {1}".format (func_path, module.name));
 		let result = part[func_loc[1]];
 		if (typeof result != "function")
-			throw new TypeError ("Not a function at " + func_path + " in module " + module.name);
+			throw new TypeError ("Not a function at {0} in module {1}".format (func_path, module.name));
 		return part[func_loc[1]];
 	},
 	
+	
+	/**
+	 * Get the object corresponding to an extension. This is where you interface
+	 * the extension and interact with it. There will only be one single object
+	 * for each extension.
+	 *
+	 * @arg {extension} The extension meta object describing the extension.
+	 */
 	get_extension_object: function (extension) {
 		let module = this.init_module (extension.module);
 		if (extension.obj)
@@ -151,7 +213,7 @@ ModuleManager.prototype = {
 		let ns = imports[cls_loc[0]];
 		let cls = ns[cls_loc[1]];
 		if (typeof cls !== "function")
-			throw new TypeError ("Not a constructor at " + extension.extension_class + " in module " + module.name);
+			throw new TypeError ("Not a constructor at {0} in module {1}".format (extension.extension_class, module.name));
 		let obj = new cls ();
 		let info = this.points[extension["extends"]].info;
 		if (info.test_func && !info.test_func.apply (null, [obj].concat (info.test_args)))
@@ -175,3 +237,4 @@ ModuleManager.prototype = {
 			listener (point.path, point.extensions[i]);
 	}
 };
+

@@ -20,7 +20,6 @@
  */
 function implements_interface (obj, iface)
 {
-	print ("Testing interface " + iface + " on " + obj);
 	for (let member in iface) {
 		let condition = iface[member];
 		if (typeof condition == "string")

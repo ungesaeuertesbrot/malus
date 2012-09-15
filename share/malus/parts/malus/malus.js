@@ -93,7 +93,7 @@ Context.modules.add_extension_point ("/", {
 	is_singular: true,
 	test_func: function (obj) { return imports.malus.iface.implements_interface (obj, {run: "function"}); }
 });
-Context.modules.update ();
+//Context.modules.update ();
 Context.modules.add_extension_listener ("/", function (pt, ext) {
 	Context.modules.get_extension_object (ext).run ();
 });
