@@ -16,17 +16,18 @@ function builder_connect_signals (builder, js_handlers_obj) {
  * Connect signals and objects from a GtkBuilder.
  *
  * @arg builder A GtkBuilder to connect to.
- * @arg js_connector A JavaScript object containing the event handlers to be
- *                   connected and any number of additional fields initialized
- *                   to null that will be set with the objects of the same name
- *                   from builder.
+ * @arg js_events A JavaScript object containing the event handlers to be
+ *                connected
+ * @arg js_objects An object containing any number of fields initialized to null
+ *                 that will be set with the objects of the same name from
+ *                 builder.
  */
-function builder_connect (builder, js_connector) {
+function builder_connect (builder, js_events, js_objects) {
 	builder_connect_signals (builder, js_connector);
 	
-	for (let field in js_connector) {
-		if (js_connector[field] === null)
-			js_connector[field] = builder.get_object (field);
+	for (let field in js_object_sink) {
+		if (js_object_sink[field] === null)
+			js_object_sink[field] = builder.get_object (field);
 	}
 }
 
