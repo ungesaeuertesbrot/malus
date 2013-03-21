@@ -59,7 +59,7 @@ var bin_dir = GLib.build_filenamev ([app_prefix, "bin"]);
 var malus_share = GLib.build_filenamev ([malus_prefix, "share", MALUS_NAME]);
 var app_share = GLib.build_filenamev ([app_prefix, "share", app_name]);
 
-imports.searchPath.unshift (GLib.build_filenamev ([malus_share, "parts"]));
+imports.searchPath.unshift (GLib.build_filenamev ([malus_share, "js"]));
 // Imports search path is set up. Import the following once so it can apply its
 // patches.
 imports.malus.patches;

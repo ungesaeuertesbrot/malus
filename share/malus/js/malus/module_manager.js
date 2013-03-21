@@ -157,7 +157,7 @@ ModuleManager.prototype = {
 		if (module.initialized)
 			return module;
 			
-		imports.searchPath.unshift (GLib.build_filenamev ([module.path, "parts"]));
+		imports.searchPath.unshift (GLib.build_filenamev ([module.path, "js"]));
 		module.initialized = true;
 		if (module.info.init_func) {
 			let init_func = this.get_module_function (module, module.info.init_func);
@@ -196,6 +196,11 @@ ModuleManager.prototype = {
 	},
 	
 	
+	get_module_directory: function (module) {
+		return this.modules[module].path;
+	},
+	
+	
 	/**
 	 * Get the object corresponding to an extension. This is where you interface
 	 * the extension and interact with it. There will only be one single object
@@ -209,7 +214,7 @@ ModuleManager.prototype = {
 			return extension.obj;
 			
 		let cls_loc = extension.extension_class.split ("::");
-		let script = GLib.build_filenamev ([this.modules[extension.module].path, "parts", cls_loc[0]]) + ".js";
+		let script = GLib.build_filenamev ([this.modules[extension.module].path, "js", cls_loc[0]]) + ".js";
 		let ns = imports[cls_loc[0]];
 		let cls = ns[cls_loc[1]];
 		if (typeof cls !== "function")
