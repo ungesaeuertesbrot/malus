@@ -10,3 +10,12 @@ function builder_connect_signals (builder, js_handlers_obj) {
 	});
 }
 
+
+function builder_connect (builder, dest_events, dest_objects) {
+	builder_connect_signals (builder, dest_events);
+	
+	for (let field in dest_objects)
+		if (dest_objects[field] === null)
+			dest_objects[field] = builder.get_object (field);
+}
+
