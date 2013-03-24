@@ -157,7 +157,7 @@ ModuleManager.prototype = {
 		if (module.initialized)
 			return module;
 			
-		imports.searchPath.unshift (GLib.build_filenamev ([module.path, "js"]));
+		imports.searchPath.push (GLib.build_filenamev ([module.path, "js"]));
 		module.initialized = true;
 		if (module.info.init_func) {
 			let init_func = this.get_module_function (module, module.info.init_func);
@@ -165,6 +165,11 @@ ModuleManager.prototype = {
 		}
 		
 		return module;
+	},
+	
+	
+	get_module_directory: function (module) {
+		return this.modules[module].path;
 	},
 	
 	
@@ -193,11 +198,6 @@ ModuleManager.prototype = {
 		if (typeof result != "function")
 			throw new TypeError ("Not a function at {0} in module {1}".format (func_path, module.name));
 		return part[func_loc[1]];
-	},
-	
-	
-	get_module_directory: function (module) {
-		return this.modules[module].path;
 	},
 	
 	
