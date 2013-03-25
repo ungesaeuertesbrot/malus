@@ -221,8 +221,10 @@ ModuleManager.prototype = {
 			throw new TypeError ("Not a constructor at {0} in module {1}".format (extension.extension_class, module.name));
 		let obj = new cls ();
 		let info = this.points[extension["extends"]].info;
-		if (info.test_func && !info.test_func.apply (null, [obj].concat (info.test_args)))
+		if (info.test_func && !info.test_func.apply (null, [obj].concat (info.test_args))) {
+			printerr ("Error: interface test failed for extension at " + extension.extension_class);
 			return null;
+		}
 		
 		extension.obj = obj;
 		return obj;

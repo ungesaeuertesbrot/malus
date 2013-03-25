@@ -26,7 +26,7 @@ function implements_interface (obj, iface)
 			condition = {type: condition};
 			
 		let is_type = typeof obj[member];
-		if (is_type == "undefined")
+		if (is_type == "undefined" && condition.type !== "gsignal")
 			return false;
 		
 		if (condition.type.length == 0)
@@ -41,7 +41,15 @@ function implements_interface (obj, iface)
 			if (typeof obj.has_event !== "function" || !obj.has_event (member))
 				return false;
 			break;
-			
+		
+		case "gsignal": {
+			let GObj = imports.gi.GObject;	// do not import this where it is
+											// stricly necessary to avoid
+											// loading GObject in non-GObject
+											// apps.
+			return GObj.signal_lookup (member, obj.constructor.$gtype) !== 0;
+		}
+		
 		default:
 			if (is_type !== condition.type)
 				return false
