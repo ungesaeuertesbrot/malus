@@ -70,7 +70,7 @@ ModuleManager.prototype = {
 			for (let i = 0; i < info.extensions.length; i++) {
 				let ext = info.extensions[i];
 				this._init_extension_point (ext["extends"]);
-				ext.module = mod;
+				ext.module_name = mod;
 				this.points[ext["extends"]].extensions.push (ext);
 			}
 		}
@@ -82,6 +82,9 @@ ModuleManager.prototype = {
 	 * called automatically when creating a new instance and must be called
 	 * again each time a new modules has become available and needs to be found
 	 * by the module manager.
+	 * 
+	 * Currently it will also immediately initialize all modules to work around
+	 * a bug in GJS.
 	 */
 	update: function () {
 		let module_dirs = {};
@@ -123,6 +126,9 @@ ModuleManager.prototype = {
 				info: module_info,
 				initialized: false
 			};
+			// Work around a bug in GJS. Switch back to lazy initialization once
+			// it's fixed.
+			this.init_module (dir);
 		}
 		
 		this._preload_extensions ();
@@ -150,8 +156,8 @@ ModuleManager.prototype = {
 	 * @arg {module} Name of the module.
 	 * @returns The module meta object.
 	 */
-	init_module: function (module) {
-		module = this.modules[module];
+	init_module: function (module_name) {
+		let module = this.modules[module_name];
 		if (!module)
 			throw new Error ("No such module " + module);
 		if (module.initialized)
@@ -168,8 +174,8 @@ ModuleManager.prototype = {
 	},
 	
 	
-	get_module_directory: function (module) {
-		return this.modules[module].path;
+	get_module_directory: function (module_name) {
+		return this.modules[module_name].path;
 	},
 	
 	
@@ -184,16 +190,16 @@ ModuleManager.prototype = {
 	 *                  the function itself, i.e. inside that file.
 	 * @returns The corresponding function object.
 	 */
-	get_module_function: function (module, func_path) {
-		module = this.init_module (module);
+	get_module_function: function (module_name, func_path) {
+		let module = this.init_module (module_name);
 		let func_loc = func_path.split ("::");
 		try {
 			var part = imports[func_loc[0]];
 		} catch (e) {
-			throw new Error ("ModuleManager.get_module_function: Could not load containing script at {0} in module {1}".format (func_path, module.name));
+			throw new Error ("ModuleManager.get_module_function: Could not load containing script at {0} in module {1}".format (func_path, module_name));
 		}
 		if (!part[func_loc[1]])
-			throw new Error ("ModuleManager.get_module_function: No such function in script at {0} in module {1}".format (func_path, module.name));
+			throw new Error ("ModuleManager.get_module_function: No such function in script at {0} in module {1}".format (func_path, module_name));
 		let result = part[func_loc[1]];
 		if (typeof result != "function")
 			throw new TypeError ("Not a function at {0} in module {1}".format (func_path, module.name));
@@ -209,16 +215,11 @@ ModuleManager.prototype = {
 	 * @arg {extension} The extension meta object describing the extension.
 	 */
 	get_extension_object: function (extension) {
-		let module = this.init_module (extension.module);
+		let module = this.init_module (extension.module_name);
 		if (extension.obj)
 			return extension.obj;
 			
-		let cls_loc = extension.extension_class.split ("::");
-		let script = GLib.build_filenamev ([this.modules[extension.module].path, "js", cls_loc[0]]) + ".js";
-		let ns = imports[cls_loc[0]];
-		let cls = ns[cls_loc[1]];
-		if (typeof cls !== "function")
-			throw new TypeError ("Not a constructor at {0} in module {1}".format (extension.extension_class, module.name));
+		let cls = this.get_module_function (extension.module_name, extension.extension_class);
 		let obj = new cls ();
 		let info = this.points[extension["extends"]].info;
 		if (info.test_func && !info.test_func.apply (null, [obj].concat (info.test_args))) {
