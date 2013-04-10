@@ -24,24 +24,17 @@ function implements_interface (obj, iface)
 		let condition = iface[member];
 		if (typeof condition == "string")
 			condition = {type: condition};
-			
-		let is_type = typeof obj[member];
-		if (is_type == "undefined" && condition.type !== "gsignal")
-			return false;
-		
-		if (condition.type.length == 0)
+		else if (typeof condition.type != "string")
 			continue;
+
+		let is_type = typeof obj[member];
+
 		switch (condition.type) {
 		case "array":
 			if (!((is_type == "object") && (obj[member].isArray ())))
 				return false;
 			break;
-			
-		case "event":
-			if (typeof obj.has_event !== "function" || !obj.has_event (member))
-				return false;
-			break;
-		
+
 		case "gsignal": {
 			let GObj = imports.gi.GObject;	// do not import this where it is
 											// stricly necessary to avoid
@@ -51,6 +44,9 @@ function implements_interface (obj, iface)
 		}
 		
 		default:
+			// Only test presence of field, no matter what type
+			if (condition.type.length === 0 && is_type !== "undefined")
+				break;
 			if (is_type !== condition.type)
 				return false
 		}
