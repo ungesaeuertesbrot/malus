@@ -8,7 +8,7 @@ const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 
 const cmd_line_args = {
-	'-': function () true,
+	//'-': function () true,
 	'n': function (name) {app_name = name;},
 	'm': function (prefix) {malus_prefix = prefix;},
 	'a': function (prefix) {app_prefix = prefix;}
@@ -23,13 +23,9 @@ for (let i = 0; i < ARGV.length; ) {
 	if (ARGV[i][0] != '-') { i++; continue; }
 	if (!cmd_line_args.hasOwnProperty (ARGV[i][1])) { i++; continue; }
 	let func = cmd_line_args[ARGV[i][1]];
-	ARGV.splice (i, 1);
-	let args = [];
-	let len = func.length;
-	while (len--) {
-		args.push (ARGV[i]);
-		ARGV.splice (i, 1);
-	}
+	let len = func.length + 1;	// includes original argument
+	let args = ARGV.slice(i + 1, i + len);
+	ARGV.splice(i, len);
 	if (func.apply (null, args))
 		break;
 }
@@ -95,7 +91,7 @@ Context.modules.add_extension_point ("/", {
 });
 //Context.modules.update ();
 Context.modules.add_extension_listener ("/", function (pt, ext) {
-	Context.modules.get_extension_object (ext).run ();
+	Context.modules.get_extension_object (ext).run (ARGV);
 });
 
 Context.settings.save ();
