@@ -10,14 +10,14 @@ function builder_connect_signals (builder, js_handlers_obj, that) {
 			printerr ("Error in " + arguments.callee.name + ": Could not bind event " + sig_name + " to " + handler_name + ": no such function");
 			return;
 		}
-		obj = that ? that : obj;
-		obj.connect (sig_name, js_handlers_obj[handler_name].bind (obj));
+		that = that ? that : obj;
+		obj.connect (sig_name, js_handlers_obj[handler_name].bind (that));
 	});
 }
 
 
-function builder_connect (builder, dest_events, dest_objects) {
-	builder_connect_signals (builder, dest_events);
+function builder_connect (builder, dest_events, dest_objects, that) {
+	builder_connect_signals (builder, dest_events, that);
 	
 	for (let field in dest_objects)
 		if (dest_objects[field] === null)
