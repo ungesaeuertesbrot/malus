@@ -27,8 +27,7 @@ modules which are bundles of *extension points* and *extensions*. The main
 difference is that MALUS is for JavaScript/Gjs and is not a library to be used
 by appications which are instantiated in a regular fashion but rather makes the
 application itself into a module for MALUS. And, of course, MALUS is currently
-far less powerful than the Eclipse platform (and will by all probability remain
-so).
+far less powerful than the Eclipse platform (and will always be).
 
 Utilities
 ---------
@@ -52,32 +51,49 @@ The initial variables are:
     3. the directory for shared data of MALUS itself in `malus_share`,
     4. the prefix the application is installed in in `prefix` and,
     5. the directory containing the shared data of the application in `share`.
-2. `application`: The Application object. See `imports.malus.application`.
-3. `settings`: A `Settings` object. See `imports.malus.settings`.
-4. `modules`: A `ModuleManager` which will give you access to addons and
+2. `version`: A Version object (see `imports.malus.version`) representing the
+   present version of the malus framework.
+3. `application`: The Application object. See `imports.malus.application`.
+4. `settings`: A `Settings` object. See `imports.malus.settings`.
+5. `modules`: A `ModuleManager` which will give you access to addons and
    extensions. See `imports.malus.module_manager`.
 
-### `imports.malus.event`
-A simple API for adding event logic to JavaScript classes. Events are added to a
-prototype by calling `add_event` or `add_events` on it. This will also extend
-the prototype with a number of functions, namely `has_event` to check if an
-object or its prototype contains a certain event, `add_event_listener`,
-`remove_event_listener` and `fire_event`, which should be rather
-self-explanatory. Owing to the structure of JavaScript an event is but a string
-naming it -- there is no such thing as a definition of a delegate.
+### `imports.malus.gtk_ext`
+Importing this file will extend Gtk.Builder with two functions allowing to
+connect the objects built by the builder to fields and event handlers in your
+JavaScript code.
 
 ### `imports.malus.iface`
 Provides a mechanism to test an object for conformance to an “interface”.
 Basically this checks wheather certain fields are present and of a specified
 type (such as `function`). This is used in the definition of extension points.
 
+### `imports.malus.injection`
+Provides a mechanism for dependency injection. This is used by the ModuleManager
+to inject dependencies into modules being loaded. These may then use the same
+mechanism for injecting into single objects.
+
 ### `imports.malus.module_manager`
+This is a central piece of malus. It will initialy read system and user modules
+and extract information on the extension points and extensions contained
+therein. These extensions can then be requested and used by other modules. In
+fact, a malus application consists of a number of modules one of which must
+extend the root extension point ("/").
 
 ### `imports.malus.patches`
+Importing this file will patch the core and imports.gi.GLib and add mssing
+functionality. See `imports.malus.patch_core` and `imports.malus.patch_glib` for
+details.
 
 ### `imports.malus.settings`
+Reads global and *per user* settings for the application and will write user
+settings back on shutdown. The class used for achieving this will usually
+only be used by malus itself and an object of that class made available through
+`imports.malus.context` and the injection mechanism.
 
 ### `imports.malus.version`
+Contains a class (Version) for defining and comparing versions. Such versions
+consist of up to four numeric parts and can be tested for mutual compatibility.
 
 Running an Application
 ----------------------
@@ -97,7 +113,7 @@ Running an application using MALUS involves these steps:
        prefix of MALUS instead of a hard coded value.
     3. The name of the application. This *must* be passed as either the argument
        to the `-n` command line option or the value of the `MALUS_APP_NAME`
-       environment valiable, the former taking precedent over the latter. If
+       environment valiable, the former taking precedence over the latter. If
        none of the two is present, MALUS will fail with an error.
 2. MALUS will set up the context (`imports.malus.context`) and calculate the
    paths in context.paths based on the information from step one.
