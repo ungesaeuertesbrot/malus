@@ -1,8 +1,6 @@
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 
-const Context = imports.malus.context;
-
 const DEFAULT_SETTINGS_FILE = "settings.js";
 
 
@@ -23,18 +21,19 @@ const DEFAULT_SETTINGS_FILE = "settings.js";
  * @arg {fn} Name of settings files. If this argument is omitted it will
  *           default to "settings.js".
  */
-function Settings (fn)
+function Settings (fn, context)
 {
-	this._init (fn);
+	this._init (fn, context);
 }
 
 Settings.prototype = {
-	_init: function (fn) {
+	_init: function (fn, context) {
 		if (!fn)
 			fn = DEFAULT_SETTINGS_FILE;
 		this._fn = fn;
+		this._context = context;
 		
-		let cfg_file = Gio.file_new_for_path (GLib.build_filenamev ([Context.paths.config, fn]));
+		let cfg_file = Gio.file_new_for_path (GLib.build_filenamev ([context.paths.config, fn]));
 		if (cfg_file.query_exists (null)) {
 			let cfg = GLib.file_get_contents (cfg_file.get_path ());
 			try {
@@ -44,13 +43,13 @@ Settings.prototype = {
 			}
 		}
 	
-		if (!Context.application.info.has_global_settings)
+		if (!context.application.info.has_global_settings)
 			return;
 	
 		let global_cfg_dirs = GLib.get_system_config_dirs ();
 	
 		for (let i = 0; i < global_cfg_dirs.length; i++) {
-			cfg_file = GLib.build_filenamev ([global_cfg_dirs[i], Context.application.info.name, fn]);
+			cfg_file = GLib.build_filenamev ([global_cfg_dirs[i], context.application.info.name, fn]);
 			cfg_file = Gio.file_new_for_path (cfg_file);
 			if (!cfg_file.query_exists ())
 				continue;
@@ -82,7 +81,7 @@ Settings.prototype = {
 		}
 		
 		if (has_setting) {
-			let cfg_file = GLib.build_filenamev ([Context.paths.config, this._fn]);
+			let cfg_file = GLib.build_filenamev ([this._context.paths.config, this._fn]);
 			GLib.file_set_contents (cfg_file, JSON.stringify (this._user, null, "\t"), -1);
 		}
 	},

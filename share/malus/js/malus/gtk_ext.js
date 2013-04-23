@@ -7,7 +7,7 @@
 function builder_connect_signals (builder, js_handlers_obj, that) {
 	builder.connect_signals_full (function (builder, obj, sig_name, handler_name, connect_obj, flags) {
 		if (typeof js_handlers_obj[handler_name] !== "function") {
-			printerr ("Error in " + arguments.callee.name + ": Could not bind event " + sig_name + " to " + handler_name + ": no such function");
+			printerr ("Error in %s: Could not bind event %s to %s: no such function".format(arguments.callee.name, sig_name, handler_name));
 			return;
 		}
 		that = that ? that : obj;

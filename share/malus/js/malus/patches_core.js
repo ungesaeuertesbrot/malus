@@ -1,17 +1,11 @@
 /**
- * Format a string. This is a very simplistic implementation that does no additional
- * formatting, but will simply replace any occurrence of "{n}" in the string with
- * the corresponding argument.
+ * Format a string. We use the implementation provided by gjs and inject it into
+ * the prototype of String so "%s %d".format("Give me", 5) becomes possible.
  *
  * @arg {arguments} The elements that should be substituted into the string.
  * @returns The formatted string.
  */
-String.prototype.format = function () {
-	var formatted = this;
-	for (let arg in arguments)
-		formatted = formatted.replace ("{" + arg + "}", arguments[arg]);
-	return formatted;
-};
+String.prototype.format = imports.format.format;
 
 
 /**

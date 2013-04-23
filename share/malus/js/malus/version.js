@@ -96,7 +96,3 @@ Version.prototype = {
 	}
 }
 
-
-const MALUS_VERSION_STRING = "0.1";
-const MALUS_VERSION = new Version (MALUS_VERSION_STRING);
-

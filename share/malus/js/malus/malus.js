@@ -3,6 +3,7 @@
 "use strict";
 
 const MALUS_NAME = "malus";
+const MALUS_VERSION = "0.2";
 
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
@@ -61,6 +62,9 @@ imports.searchPath.unshift (GLib.build_filenamev ([malus_share, "js"]));
 imports.malus.patches;
 const Context = imports.malus.context;
 
+const Version = imports.malus.version;
+Context.version = new Version.Version(MALUS_VERSION);
+
 Context.paths.bin = bin_dir;
 Context.paths.malus_prefix = malus_prefix;
 Context.paths.malus_share = malus_share;
@@ -81,10 +85,10 @@ const Application = imports.malus.application;
 Context.application = new Application.Application (Context.paths.share);
 
 const Settings = imports.malus.settings;
-Context.settings = new Settings.Settings ();
+Context.settings = new Settings.Settings (undefined, Context);
 
 const Modules = imports.malus.module_manager;
-Context.modules = new Modules.ModuleManager ();
+Context.modules = new Modules.ModuleManager (Context);
 Context.modules.add_extension_point ("/", {
 	is_singular: true,
 	test_func: function (obj) { return imports.malus.iface.implements_interface (obj, {run: "function"}); }

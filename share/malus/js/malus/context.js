@@ -9,6 +9,11 @@
 var paths = {};
 
 /**
+ * Version information for malus. See version.js for documentation.
+ */
+var version;
+
+/**
  * The Application object. See application.js for documentation.
  */
 var application;
