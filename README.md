@@ -105,8 +105,9 @@ Running an application using MALUS involves these steps:
     1. The prefix MALUS is installed in. This may be passed on the command line
        using the `-m` option (e.g. `malus -m /opt`). If this option is not
        present MALUS will take the value of the `MALUS_PREFIX` environment
-       variable. If this variable is not present either it will default to
-       /usr/local.
+       variable. If this variable is not present either it will extract the
+       prefix from the path to the malus.js script, which will almost allways be
+       correct.
     2. The prefix the application is installed in. The same semantics as above
        apply with the command line option being `-a` and the environment
        variable `MALUS_APP_PREFIX`. Also, it will default to the value of the
