@@ -1,42 +1,12 @@
 /**
- * Check if the version of MALUS required by the application is available.
- *
- * @arg {client_version} MALUS version required by the application.
- * @returns `true` if version is compatible.
- */
-function check_client_version (client_version)
-{
-	return check_version (MALUS_VERSION, client_version);
-}
-
-
-/**
- * Check if an available version is sufficient to satisfy the needs of a
- * required version (i.e. available >= required).
- *
- * @arg {available} Available version.
- * @arg {required} Required version.
- */
-function check_version (available, required)
-{
-	if (typeof (available) === "string")
-		available = new Version (available);
-	if (typeof (required) === "string")
-		required = new Version (required);
-	
-	return (available.compare (required) >= 0);
-}
-
-
-/**
  * Create a Version object.
  *
  * @arg {str} string representation of the version:
  *            "[major].[minor].[point].[post_point]"
  */
-function Version (str)
+function Version(str)
 {
-	this._init (str);
+	this._init(str);
 }
 
 const _version_fields = ["major", "minor", "point", "post_point"];
@@ -47,13 +17,13 @@ Version.prototype = {
 	point: 0,
 	post_point: 0,
 	
-	_init: function (str) {
-		let field_values = str.split (".");
+	_init: function(str) {
+		let field_values = str.split(".");
 		if (field_values.length > 4)
 			field_values.length = 4;
 		for (let i = 0; i < field_values.length; i++) {
-			let num_val = Number (field_values[i]);
-			if (isNaN (num_val))
+			let num_val = Number(field_values[i]);
+			if (isNaN(num_val))
 				break;
 			this[_version_fields[i]] = num_val;
 		}
@@ -69,9 +39,9 @@ Version.prototype = {
 	 *          present version is greater and a negative one if it is smaller
 	 *          than the other version.
 	 */
-	compare: function (other) {
+	compare: function(other) {
 		if (typeof other !== "object")
-			other = new Version (other.toString ());
+			other = new Version(other.toString());
 		
 		let delta = 0;
 		for each (field in _version_fields) {
@@ -92,7 +62,16 @@ Version.prototype = {
 	 *          "[major].[minor].[point].[post_point]".
 	 */
 	toString: function () {
-		return "{0}.{1}.{2}.{3}".format (this.major, this.minor, this.point, this.post_point);
-	}
+		let result;
+		
+		if (this.post_point > 0)
+			result = "%d.%d.%d.%d".format(this.major, this.minor, this.point, this.post_point);
+		else if (this.point > 0)
+			result = "%d.%d.%d".format(this.major, this.minor, this.point);
+		else
+			result = "%d.%d".format(this.major, this.minor);
+		
+		return result;
+	},
 }
 

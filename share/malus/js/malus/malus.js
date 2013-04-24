@@ -82,7 +82,7 @@ if (!gfile.query_exists (null))
 	gfile.make_directory_with_parents (null, null);
 
 const Application = imports.malus.application;
-Context.application = new Application.Application (Context.paths.share);
+Context.application = new Application.Application (Context);
 
 const Settings = imports.malus.settings;
 Context.settings = new Settings.Settings (undefined, Context);

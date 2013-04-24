@@ -9,19 +9,18 @@ const GLib = imports.gi.GLib;
  * @arg {app_base_path} Path to the directory the application's info.js file
  *                      resides in.
  */
-function Application (app_base_path, context)
+function Application (context)
 {
-	this._init(app_base_path, context);
+	this._init(context);
 }
 
 Application.prototype = {
-	_init: function(app_base_path, context) {
-		let info_file_path = GLib.build_filenamev ([app_base_path, "info.js"]);
+	_init: function(context) {
+		let info_file_path = GLib.build_filenamev ([context.paths.share, "info.js"]);
 		let info = GLib.file_get_contents (info_file_path);
 		this.info = JSON.parse (info[1]);
-		this.base_path = app_base_path;
 
-		if (!context.version.check_client_version (this.info.malus_version))
+		if (context.version.compare(this.info.malus_version) < 0)
 			throw new Error ("Incompatible malus version (requested %s, is %s)".format(this.info.malus_version, context.version.toString()));
 		
 		GLib.set_application_name(this.info.title);
@@ -32,10 +31,5 @@ Application.prototype = {
 	 * README file for details.
 	 */
 	info: {},
-	
-	/**
-	 * Path to the directory the application's info.js resides in.
-	 */
-	base_path: "",
 }
 
