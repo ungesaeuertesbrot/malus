@@ -222,7 +222,7 @@ ModuleManager.prototype = {
 			return extension.obj;
 			
 		let cls = this.get_module_function(extension.module_name, extension.extension_class);
-		let obj = new cls();
+		let obj = new cls(this._injector);
 		let info = this.points[extension["extends"]].info;
 		if (info.test_func && !info.test_func.apply(null, [obj].concat(info.test_args))) {
 			printerr("Error: interface test failed for extension at " + extension.extension_class);

@@ -10,15 +10,20 @@ Injector.prototype = {
 	
 	inject: function(dest, keys) {
 		if (!Array.isArray(keys))
-			keys = dest.keys;
-		for each (let key in keys) {
-			if (typeof this._src[key] === "undefined")
-				printerr("!!WARNING: trying to inject '%s' which is not a defined injectable".format(key));
-			else if (typeof dest[key] !== "undefined"
-					 && dest[key] !== null)
-				printerr("!!WARNING: trying to inject '%s' which is already set to '%s' in destination".format(key, dest[key].toString()));
+			keys = Object.keys(dest);
+		for each (let dest_key in keys) {
+			let src_key = dest_key;
+			if (typeof dest_key === "object") {
+				src_key = dest_key.src;
+				dest_key = dest_key.dest;
+			}
+			if (typeof this._src[src_key] === "undefined")
+				printerr("!!WARNING: trying to inject '%s' which is not a defined injectable".format(src_key));
+			else if (typeof dest[dest_key] !== "undefined"
+					 && dest[dest_key] !== null)
+				printerr("!!WARNING: trying to inject '%s' which is already set to '%s' in destination".format(dest_key, dest[dest_key].toString()));
 			else
-				dest[key] = this._src[key];
+				dest[dest_key] = this._src[src_key];
 		}
 	},
 	
