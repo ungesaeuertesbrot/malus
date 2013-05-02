@@ -9,14 +9,15 @@ Injector.prototype = {
 	},
 	
 	inject: function(dest, keys) {
-		if (!Array.isArray(keys))
+		let dest_names = null;
+		if (!keys) {
 			keys = Object.keys(dest);
-		for each (let dest_key in keys) {
-			let src_key = dest_key;
-			if (typeof dest_key === "object") {
-				src_key = dest_key.src;
-				dest_key = dest_key.dest;
-			}
+		} else if (!Array.isArray(keys)) {
+			dest_names = keys;
+			keys = Object.keys(keys);
+		}
+		for each (let src_key in keys) {
+			let dest_key = dest_names ? dest_names[src_key] : src_key;
 			if (typeof this._src[src_key] === "undefined")
 				printerr("!!WARNING: trying to inject '%s' which is not a defined injectable".format(src_key));
 			else if (typeof dest[dest_key] !== "undefined"
