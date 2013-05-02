@@ -25,8 +25,8 @@ for (let i = 0; i < ARGV.length; ) {
 	if (!cmd_line_args.hasOwnProperty(ARGV[i][1])) { i++; continue; }
 	let func = cmd_line_args[ARGV[i][1]];
 	let len = func.length + 1;	// includes original argument
-	let args = ARGV.slice(i + 1, i + len);
-	ARGV.splice(i, len);
+	let args = ARGV.splice(i, len);
+	args.shift();
 	if (func.apply(null, args))
 		break;
 }
@@ -83,6 +83,8 @@ imports.searchPath.unshift(GLib.build_filenamev ([malus_share, "js"]));
 // patches.
 imports.malus.patches;
 const Context = imports.malus.context;
+
+Context.argv = ARGV;
 
 const Version = imports.malus.version;
 Context.version = new Version.Version(MALUS_VERSION);

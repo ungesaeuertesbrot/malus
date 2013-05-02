@@ -168,7 +168,7 @@ ModuleManager.prototype = {
 		imports.searchPath.push(GLib.build_filenamev ([module.path, "js"]));
 		module.initialized = true;
 		if (module.info.init_func) {
-			let init_func = this.get_module_function(module, module.info.init_func);
+			let init_func = this.get_module_function(module_name, module.info.init_func);
 			init_func(this._injector);
 		}
 		
