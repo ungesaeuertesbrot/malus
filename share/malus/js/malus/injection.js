@@ -8,16 +8,29 @@ Injector.prototype = {
 		this._src = src;
 	},
 	
-	inject: function(dest, keys) {
-		let dest_names = null;
-		if (!keys) {
-			keys = Object.keys(dest);
-		} else if (!Array.isArray(keys)) {
-			dest_names = keys;
-			keys = Object.keys(keys);
+	_inject_direct: function(dest) {
+		for (let [dest_key, key] in Iterator(dest)) {
+			if (typeof key !== "string")
+				key = dest_key;
+			if (typeof this._src[key] === "undefined")
+				printerr("!!WARNING: trying to inject '%s' which is not a defined injectable".format(key));
+			else
+				dest[dest_key] = this._src[key];
 		}
-		for each (let src_key in keys) {
-			let dest_key = dest_names ? dest_names[src_key] : src_key;
+	},
+	
+	inject: function(dest, keys) {
+		if (!keys) {
+			this._inject_direct(dest);
+			return;
+		}
+		
+		let dest_names = keys;
+		if (!Array.isArray(keys))
+			dest_names = Object.keys(keys);
+		for (let index in keys) {
+			let dest_key = dest_names[index];
+			let src_key = keys[index];
 			if (typeof this._src[src_key] === "undefined")
 				printerr("!!WARNING: trying to inject '%s' which is not a defined injectable".format(src_key));
 			else if (typeof dest[dest_key] !== "undefined"
