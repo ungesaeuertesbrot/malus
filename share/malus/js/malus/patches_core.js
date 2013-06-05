@@ -24,7 +24,7 @@ String.prototype.format = imports.format.format;
  * @arg {arguments} All remaining arguments will be passed to the parent function.
  * @returns A function that binds the parent function to {that}.
  */
-Function.prototype.bind_once = function () {
+Function.prototype.bindOnce = function() {
 	if (!this._bound)
 		this._bound = [];
 	for each (let b in this._bound) {
@@ -44,7 +44,7 @@ Function.prototype.bind_once = function () {
 	// it doesn't accept an arguments array. The code is stolen from MDN and slightly
 	// modified.
 	
-	let marshaller = function () {
+	let marshaller = function() {
 		if (typeof this !== "function") {  
 			// closest thing possible to the ECMAScript 5 internal IsCallable function  
 			throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");  
@@ -65,8 +65,8 @@ Function.prototype.bind_once = function () {
 		fBound.prototype = new fNOP();  
 
 		return fBound;  
-	}.apply (this, arguments);
-	this._bound.push ({marshaller: marshaller, args: Array.prototype.slice.call (arguments)});
+	}.apply(this, arguments);
+	this._bound.push({marshaller: marshaller, args: Array.prototype.slice.call(arguments)});
 	return marshaller;
 };
 

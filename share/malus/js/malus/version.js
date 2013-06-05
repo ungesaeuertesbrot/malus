@@ -9,23 +9,23 @@ function Version(str)
 	this._init(str);
 }
 
-const _version_fields = ["major", "minor", "point", "post_point"];
+const _VERSION_FIELDS = ["major", "minor", "point", "post_point"];
 
 Version.prototype = {
 	major: 0,
 	minor: 0,
 	point: 0,
-	post_point: 0,
+	postPoint: 0,
 	
 	_init: function(str) {
-		let field_values = str.split(".");
-		if (field_values.length > 4)
-			field_values.length = 4;
-		for (let i = 0; i < field_values.length; i++) {
-			let num_val = Number(field_values[i]);
-			if (isNaN(num_val))
+		let fieldValues = str.split(".");
+		if (fieldValues.length > 4)
+			fieldValues.length = 4;
+		for (let i = 0; i < fieldValues.length; i++) {
+			let numVal = Number(fieldValues[i]);
+			if (isNaN(numVal))
 				break;
-			this[_version_fields[i]] = num_val;
+			this[_VERSION_FIELDS[i]] = numVal;
 		}
 	},
 	
@@ -44,7 +44,7 @@ Version.prototype = {
 			other = new Version(other.toString());
 		
 		let delta = 0;
-		for each (field in _version_fields) {
+		for each (field in __VERSION_FIELDS) {
 			delta = this[field] - other[field];
 			if (delta !== 0)
 				break;
@@ -64,8 +64,8 @@ Version.prototype = {
 	toString: function () {
 		let result;
 		
-		if (this.post_point > 0)
-			result = "%d.%d.%d.%d".format(this.major, this.minor, this.point, this.post_point);
+		if (this.postPoint > 0)
+			result = "%d.%d.%d.%d".format(this.major, this.minor, this.point, this.postPoint);
 		else if (this.point > 0)
 			result = "%d.%d.%d".format(this.major, this.minor, this.point);
 		else

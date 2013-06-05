@@ -5,8 +5,8 @@ const GLib = imports.gi.GLib;
  *
  * @returns A new Date object set to the values from the GDate at 00:00:00.0.
  */
-GLib.Date.prototype.to_js_date = function () {
-	return new Date (this.get_year (), this.get_month () - 1, this.get_day ());
+GLib.Date.prototype.to_js_date = function() {
+	return new Date(this.get_year(), this.get_month() - 1, this.get_day());
 };
 
 
@@ -17,8 +17,8 @@ GLib.Date.prototype.to_js_date = function () {
  * 			Remember that JavaScript Date.valueOf and similar will give you
  * 			milli-seconds instead!
  */
-GLib.Date.prototype.to_time_t = function () {
-	return new Date (this.get_year (), this.get_month () - 1, this.get_day ()).valueOf () / 1000;
+GLib.Date.prototype.to_time_t = function() {
+	return new Date(this.get_year(), this.get_month() - 1, this.get_day()).valueOf() / 1000;
 };
 
 
@@ -27,10 +27,10 @@ GLib.Date.prototype.to_time_t = function () {
  *
  * @returns The formatted date.
  */
-GLib.Date.prototype.to_iso8601 = function () {
-	let year = this.get_year ().toString ();
-	let month = this.get_month ().toString ();
-	let day = this.get_day ().toString ();
+GLib.Date.prototype.to_iso8601 = function() {
+	let year = this.get_year().toString();
+	let month = this.get_month().toString();
+	let day = this.get_day().toString();
 	if (month.length === 1)
 		month = "0" + month;
 	if (day.length === 1)
@@ -44,7 +44,7 @@ GLib.Date.prototype.to_iso8601 = function () {
  *
  * @arg {jsdate} A JavaScript Date object to use.
  */
-GLib.Date.prototype.set_js_date = function (jsdate) {
-	this.set_dmy (jsdate.getDate (), jsdate.getMonth () + 1, jsdate.getFullYear ());
+GLib.Date.prototype.set_js_date = function(jsdate) {
+	this.set_dmy(jsdate.getDate(), jsdate.getMonth() + 1, jsdate.getFullYear());
 };
 

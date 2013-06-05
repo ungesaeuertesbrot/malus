@@ -16,14 +16,14 @@ function Application (context)
 
 Application.prototype = {
 	_init: function(context) {
-		let info_file_path = GLib.build_filenamev ([context.paths.share, "info.js"]);
-		let info = GLib.file_get_contents (info_file_path);
+		let infoFilePath = GLib.build_filenamev ([context["malus.paths"].share, "info.js"]);
+		let info = GLib.file_get_contents (infoFilePath);
 		this.info = JSON.parse (info[1]);
 
-		if (context.version.compare(this.info.malus_version) < 0)
-			throw new Error ("Incompatible malus version (requested %s, is %s)".format(this.info.malus_version, context.version.toString()));
+		if (context["malus.version"].compare(this.info.MalusVersion) < 0)
+			throw new Error("Incompatible malus version (requested %s, is %s)".format(this.info.MalusVersion, context["malus.version"].toString()));
 		
-		GLib.set_application_name(this.info.title);
+		GLib.set_application_name(this.info.Title);
 	},
 	
 	/**

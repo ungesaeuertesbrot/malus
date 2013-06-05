@@ -18,7 +18,7 @@
  * @arg {iface} An object representing the interface to test against.
  * @returns     true if the object instance conforms to the interface.
  */
-function implements_interface (obj, iface)
+function implementsInterface(obj, iface)
 {
 	for (let member in iface) {
 		let condition = iface[member];
@@ -27,11 +27,11 @@ function implements_interface (obj, iface)
 		else if (typeof condition.type != "string")
 			continue;
 
-		let is_type = typeof obj[member];
+		let isType = typeof obj[member];
 
 		switch (condition.type) {
 		case "array":
-			if (!((is_type == "object") && (obj[member].isArray ())))
+			if (!((isType == "object") && (obj[member].isArray())))
 				return false;
 			break;
 
@@ -40,14 +40,16 @@ function implements_interface (obj, iface)
 											// stricly necessary to avoid
 											// loading GObject in non-GObject
 											// apps.
-			return GObj.signal_lookup (member, obj.constructor.$gtype) !== 0;
+			if (GObj.signal_lookup (member, obj.constructor.$gtype) === 0)
+				return false;
+			break;
 		}
 		
 		default:
 			// Only test presence of field, no matter what type
-			if (condition.type.length === 0 && is_type !== "undefined")
+			if (condition.type.length === 0 && isType !== "undefined")
 				break;
-			if (is_type !== condition.type)
+			if (isType !== condition.type)
 				return false
 		}
 	}

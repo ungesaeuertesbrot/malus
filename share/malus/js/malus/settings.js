@@ -21,45 +21,45 @@ const DEFAULT_SETTINGS_FILE = "settings.js";
  * @arg {fn} Name of settings files. If this argument is omitted it will
  *           default to "settings.js".
  */
-function Settings (fn, context)
+function Settings(fn, context)
 {
-	this._init (fn, context);
+	this._init(fn, context);
 }
 
 Settings.prototype = {
-	_init: function (fn, context) {
+	_init: function(fn, context) {
 		if (!fn)
 			fn = DEFAULT_SETTINGS_FILE;
 		this._fn = fn;
 		this._context = context;
 		
-		let cfg_file = Gio.file_new_for_path (GLib.build_filenamev ([context.paths.config, fn]));
-		if (cfg_file.query_exists (null)) {
-			let cfg = GLib.file_get_contents (cfg_file.get_path ());
+		let cfgFile = Gio.file_new_for_path(GLib.build_filenamev([context["malus.paths"].config, fn]));
+		if (cfgFile.query_exists(null)) {
+			let cfg = GLib.file_get_contents(cfgFile.get_path());
 			try {
-				this._user = JSON.parse (cfg[1]);
+				this._user = JSON.parse(cfg[1]);
 			} catch (e) {
-				logError (e, "Cannot load user settings");
+				logError(e, "Cannot load user settings");
 			}
 		}
 	
-		if (!context.application.info.has_global_settings)
+		if (!context["malus.application"].info.hasGlobalSettings)
 			return;
 	
-		let global_cfg_dirs = GLib.get_system_config_dirs ();
+		let globalCfgDirs = GLib.get_system_config_dirs();
 	
-		for (let i = 0; i < global_cfg_dirs.length; i++) {
-			cfg_file = GLib.build_filenamev ([global_cfg_dirs[i], context.application.info.name, fn]);
-			cfg_file = Gio.file_new_for_path (cfg_file);
-			if (!cfg_file.query_exists ())
+		for (let i = 0; i < globalCfgDirs.length; i++) {
+			cfgFile = GLib.build_filenamev([globalCfgDirs[i], context["malus.application"].info.Name, fn]);
+			cfgFile = Gio.file_new_for_path(cfgFile);
+			if (!cfgFile.query_exists())
 				continue;
 
-			let cfg = GLib.file_get_contents (cfg_file.get_path ());
+			let cfg = GLib.file_get_contents(cfgFile.get_path());
 			try {
-				this._system = JSON.parse (cfg[1]);
+				this._system = JSON.parse(cfg[1]);
 				break;
 			} catch (e) {
-				logError (e, "Cannot load system settings");
+				logError(e, "Cannot load system settings");
 			}
 		}
 	},
@@ -71,18 +71,18 @@ Settings.prototype = {
 	 * must be called at least once when the application exits or all changes to
 	 * user settings are lost. MALUS takes care of this.
 	 */
-	save: function () {
-		let has_setting = false;
+	save: function() {
+		let hasSetting = false;
 		for (let setting in this.user) {
-			if (!this._user.hasOwnProperty (setting))
+			if (!this._user.hasOwnProperty(setting))
 				continue;
-			has_setting = true;
+			hasSetting = true;
 			break;
 		}
 		
-		if (has_setting) {
-			let cfg_file = GLib.build_filenamev ([this._context.paths.config, this._fn]);
-			GLib.file_set_contents (cfg_file, JSON.stringify (this._user, null, "\t"), -1);
+		if (hasSetting) {
+			let cfgFile = GLib.build_filenamev([this._context["malus.paths"].config, this._fn]);
+			GLib.file_set_contents(cfgFile, JSON.stringify(this._user, null, "\t"), -1);
 		}
 	},
 	
@@ -91,26 +91,28 @@ Settings.prototype = {
 	 * Will retrieve the value of a setting. Normally per-user settings will
 	 * take precedent over system wide settings, except for protected settings.
 	 *
-	 * @ arg {setting} Name of the setting.
-	 * @returns The value of the setting or `undefined` if no such setting
-	 *          exists.
+	 * @arg {setting} Name of the setting.
+	 * @arg {def} Default value to be returned if the setting does not exist yet.
+	 * @returns The value of the setting or `def`.
 	 */
-	get_value: function (setting) {
-		setting = setting.toString ();
+	getValue: function(setting, def) {
+		setting = setting.toString();
 		let sys = this._system[setting],
 			usr = this._user[setting];
-		let sys_type = typeof sys,
-			usr_type = typeof usr;
-		if (sys_type === "object") {
+		let sysType = typeof sys,
+			usrType = typeof usr;
+		if (sysType === "object") {
 			if (sys.protect)
 				return sys.value;
 			else
 				sys = sys.value;
 		}
-		if (usr_type !== "undefined")
+		if (usrType !== "undefined")
 			return usr;
-		else
+		else if (sysType !== "undefined")
 			return sys;
+		else
+			return def;
 	},
 	
 	
@@ -120,17 +122,17 @@ Settings.prototype = {
 	 *
 	 * @arg {setting} Name of the setting.
 	 * @arg {value} New value of the setting.
-	 * @arg {report_error} If set to a value that will evaluate to `true` an
-	 *                     Error object will be thrown if the setting cannot be
-	 *                     set because it is protected. Otherwise such failure
-	 *                     to set the value will go unnoticed.
+	 * @arg {reportError} If set to a value that will evaluate to `true` an
+	 *                    Error object will be thrown if the setting cannot be
+	 *                    set because it is protected. Otherwise such failure
+	 *                    to set the value will go unnoticed.
 	 */
-	set_value: function (setting, value, report_error) {
+	setValue: function(setting, value, reportError) {
 		setting = setting.toString ();
 		if (typeof this._system[setting] === "object" &&
 			this._system[setting].protect) {
-			if (report_error)
-				throw new Error ("Cannot set value for protected setting " + setting);
+			if (reportError)
+				throw new Error("Cannot set value for protected setting %s".format(setting));
 			else
 				return;
 		}

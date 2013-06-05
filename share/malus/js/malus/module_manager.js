@@ -26,8 +26,8 @@ ModuleManager.prototype = {
 	_init: function(context) {
 		this._context = context;
 		this._paths = {
-			system: GLib.build_filenamev([context.paths.share, "modules"]),
-			user: GLib.build_filenamev([context.paths.user_share, "modules"])
+			system: GLib.build_filenamev([context["malus.paths"].share, "modules"]),
+			user: GLib.build_filenamev([context["malus.paths"].user_share, "modules"])
 		}
 		
 		this._injector = new Injection.Injector(context);
