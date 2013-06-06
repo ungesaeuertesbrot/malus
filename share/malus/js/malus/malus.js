@@ -121,14 +121,22 @@ Context["malus.settings"] = new Settings.Settings(undefined, Context);
 
 const Modules = imports.malus.modules;
 Context["malus.modules"] = new Modules.ModuleManager(Context);
-Context.modules.add_extension_point("/", {
-	is_singular: true,
-	test_func: function(obj) { return imports.malus.iface.implements_interface(obj, {run: "function"}); }
+
+const Extensions = imports.malus.extension;
+Context["malus.extensions"] = new Extensions.ExtensionManager(Context);
+
+Context["malus.extensions"].addExtensionPoint("/", {
+	IsSingular: true,
+	TestFunc: function(obj) { return imports.malus.iface.implements_interface(obj, {run: "function"}); }
 });
-//Context.modules.update ();
-Context.modules.add_extension_listener("/", function(pt, ext) {
-	Context.modules.get_extension_object(ext).run(ARGV);
-});
+
+let rootExt = Context["malus.extensions"].getExtensions("/");
+if (rootExt.length !== 1)
+	throw new Error("Exactly one root extension is required but found %d".format(rootExt.length));
+let extObj = Context["malus.extensions"].getExtensionObject(rootExt[0]);
+extObj.run(ARGV);
+
+// TODO: Send exit notification
 
 Context["malus.settings"].save();
 
