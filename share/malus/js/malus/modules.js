@@ -8,7 +8,7 @@ function ModuleManager(context) {
 
 ModuleManager.prototype = {
 	_modules: {},
-	
+	_disabledModules: [],
 	
 	_init: function(context) {
 		this._context = context;
@@ -20,10 +20,10 @@ ModuleManager.prototype = {
 		this._injector = new Injection.Injector(context);
 		
 		this._disabledModules = context["malus.settings"].getValue(SETTING_DISABLED_MODULES, "");
-		if (this._disabledModules.length === 0)
-			this._disabledModules = [];
-		else
+		if (this._disabledModules.length > 0)
 			this._disabledModules = this._disabledModules.split(",");
+		
+		this._listeners = [];
 		
 		this.update();
 	},
@@ -110,9 +110,16 @@ ModuleManager.prototype = {
 				initialized: false,
 				searchPathInitialized: false,
 			};
+			
 			// Work around a bug in GJS. Switch back to lazy initialization by
 			// removing the following line once it's fixed.
-			this._initModule(moduleInfo.Name, !this.isModuleEnabled(moduleInfo.Name));
+			let enabled = this.isModuleEnabled(moduleInfo.Name);
+			this._initModule(moduleInfo.Name, !enabled);
+			let module = this._modules[moduleInfo.Name];
+			
+			this._listeners.forEach(function(val, index, array) {
+				val("added", module, enabled);
+			});
 		}
 	},
 	
@@ -159,7 +166,11 @@ ModuleManager.prototype = {
 		this._disabledModules.splice(index, 1);
 		this._saveDisabledState();
 		
-		this._initModule(modName);
+		let module = this._initModule(modName);
+		
+		this._listeners.forEach(function(val, index, array) {
+			val("enabled", module);
+		}, this);
 	},
 	
 	
@@ -187,10 +198,21 @@ ModuleManager.prototype = {
 			}
 		
 		module.initialized = false;
+		
+		this._listeners.forEach(function(val, index, array) {
+			val("disabled", module);
+		}, this);
 	},
 	
 	addModulesListener: function(listener) {
-	
+		if (typeof listener !== "function")
+			throw new Error("listener must be a function");
+		
+		this._listeners.push(listener);
+		
+		this._modules.forEach(function(val, index, array) {
+			listener("added", val, this.isModuleEnabled(val.info.Name));
+		}, this);
 	},
 };
 
