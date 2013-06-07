@@ -1,4 +1,7 @@
-const DirProvider = imports.malus.mudules_directory;
+const GLib = imports.gi.GLib;
+const Gio = imports.gi.Gio;
+
+const DirProvider = imports.malus.modules_directory;
 
 const SETTING_DISABLED_MODULES = "malus.modules.disabled";
 
@@ -12,12 +15,10 @@ ModuleManager.prototype = {
 	
 	_init: function(context) {
 		this._context = context;
-		this._paths = {
-			system: GLib.build_filenamev([context["malus.paths"].share, "modules"]),
-			user: GLib.build_filenamev([context["malus.paths"].userShare, "modules"])
-		}
-		
-		this._injector = new Injection.Injector(context);
+		this._paths = [];
+		this._paths.push(GLib.build_filenamev([context["malus.paths"].share, "modules"]));
+		if (context["malus.application"].info.AllowUserModules)
+			this._paths.push(GLib.build_filenamev([context["malus.paths"].userShare, "modules"]));
 		
 		this._disabledModules = context["malus.settings"].getValue(SETTING_DISABLED_MODULES, "");
 		if (this._disabledModules.length > 0)
@@ -41,8 +42,11 @@ ModuleManager.prototype = {
 	 * @returns The corresponding function object.
 	 */
 	getModuleFunction: function(modName, funcPath, funcName) {
-		// required to make sure it is in the searchPath
+		// required to make sure it is in the searchPath with lazy initialization
 		this._initModule(modName);
+		
+		if (typeof funcName !== "string" || funcName.length === 0)
+			[funcPath, funcName] = this._decodeFunctionDescriptor(funcPath);
 		
 		try {
 			var code = imports[funcPath];
@@ -67,15 +71,15 @@ ModuleManager.prototype = {
 	update: function () {
 		let moduleProviders = {};
 		
-		for (let dir in this._paths) {
-			let gfile = Gio.file_new_for_path(this._paths[dir]);
+		for each (let dir in this._paths) {
+			let gfile = Gio.file_new_for_path(dir);
 			if (!gfile.query_exists(null))
 				continue;
 			let enumerator = gfile.enumerate_children("standard::name,standard::type", 0, null, null);
 			if (!enumerator)
 				continue;
-			let dirInfo;
-			while ((fileInfo = enumerator.nextFile(null, null))) {
+			let fileInfo;
+			while ((fileInfo = enumerator.next_file(null, null))) {
 				let fileName = fileInfo.get_name();
 				let filePath = GLib.build_filenamev([gfile.get_path (), fileName]);
 				if (typeof this._modules[filePath] !== "undefined" && this._modules[filePath] !== null)
@@ -90,12 +94,13 @@ ModuleManager.prototype = {
 			enumerator.close(null);
 		}
 		
-		for (let mp in moduleProviders) {
+		for each (let mp in moduleProviders) {
+			let moduleInfo;
 			try {
-				let moduleInfo = mp.getResourceContents("info.js");
+				moduleInfo = mp.getResourceContents("info.js");
 				moduleInfo = JSON.parse(moduleInfo);
 			} catch (e) {
-				logError(e, "Could not read information for module at location '%s': %s".format(mp.getPath(), e.message));
+				logError(e, "Could not read information for module at location '%s'".format(mp.getPath()));
 				continue;
 			}
 			
@@ -140,8 +145,8 @@ ModuleManager.prototype = {
 			return module;
 		
 		if (module.info.InitFunc) {
-			let initFunc = this.getFunction(this._decodeFunctionDescriptor(module.info.InitFunc));
-			initFunc(this._injector);
+			let initFunc = this.getModuleFunction(modName, module.info.InitFunc);
+			initFunc(this._context["malus.injector"]);
 		}
 		module.initialized = true;
 		
@@ -150,6 +155,10 @@ ModuleManager.prototype = {
 	
 	
 	isModuleEnabled: function(modName) {
+		let module = this._modules[modName];
+		if (module && !module.AllowDisable)
+			return true;
+		
 		return this._disabledModules.indexOf(modName) === -1;
 	},
 	
@@ -175,23 +184,37 @@ ModuleManager.prototype = {
 	
 	
 	disableModule: function(modName) {
+		let module = this._modules[modName];
+		if (!module.AllowDisable)
+			return false;
+		
 		if (this._disabledModules.indexOf(modName) >= 0)
-			return;
+			return true;
+		
+		let canDisable = this._listeners.every(function(value, index, array) {
+			let listenerResult = value("disabling", module);
+			// Default to true if the listener does not implement the
+			// 'disabling' event.
+			return typeof listenerResult === "boolean" ? listenerResult : true;
+		});
+		if (!canDisable)
+			return false;
+		
 		this._disabledModules.push(modName);
 		this._saveDisabledState();
 		
 		// There is currently *no way* we could remove a module from memory once
-		// it has been loaded, due to the design of GJS! We will give the module
-		// the opportunity to deconfigure itself though.
+		// it has been loaded, due to the design of GJS and it would indeed be
+		// dangerous to do so, even if we could! We will give the module the
+		// opportunity to deconfigure itself though.
 		
-		let module = this._modules[modName];
 		if (!module.initialized)
-			return;
+			return true;
 		
 		let unloadFunc = module.info.UnloadFunc;
 		if (typeof unloadFunc === "string")
 			try {
-				unloadFunc = this.getFunction(this._decodeFunctionDescriptor(unloadFunc));
+				unloadFunc = this.getModuleFunction(modName, unloadFunc);
 				unloadFunc("disabled");
 			} catch (e) {
 				logError(e, "Error calling unload function for module '%s'".format(modName));
@@ -202,6 +225,8 @@ ModuleManager.prototype = {
 		this._listeners.forEach(function(val, index, array) {
 			val("disabled", module);
 		}, this);
+		
+		return true;
 	},
 	
 	addModulesListener: function(listener) {
@@ -210,9 +235,8 @@ ModuleManager.prototype = {
 		
 		this._listeners.push(listener);
 		
-		this._modules.forEach(function(val, index, array) {
-			listener("added", val, this.isModuleEnabled(val.info.Name));
-		}, this);
+		for each (let module in this._modules)
+			listener("added", module, this.isModuleEnabled(module.info.Name));
 	},
 };
 

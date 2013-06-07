@@ -44,7 +44,7 @@ Version.prototype = {
 			other = new Version(other.toString());
 		
 		let delta = 0;
-		for each (field in __VERSION_FIELDS) {
+		for each (field in _VERSION_FIELDS) {
 			delta = this[field] - other[field];
 			if (delta !== 0)
 				break;

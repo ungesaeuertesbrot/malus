@@ -1,9 +1,15 @@
 #!/usr/bin/gjs
 
+// TODO:
+//   * Use Injector within malus itself
+//   * Disabling of extensions
+//   * Dependency checks for modules
+//   * Add ModuleProvider for gars (<jar)
+
 "use strict";
 
 const MALUS_NAME = "malus";
-const MALUS_VERSION = "0.2";
+const MALUS_VERSION = "0.3";
 
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
@@ -74,6 +80,7 @@ if (!appName) {
 
 GLib.set_prgname(appName);
 
+
 var binDir = GLib.build_filenamev([appPrefix, "bin"]);
 var malusShare = GLib.build_filenamev([malusPrefix, "share", MALUS_NAME]);
 var appShare = GLib.build_filenamev([appPrefix, "share", appName]);
@@ -83,7 +90,8 @@ imports.searchPath.unshift(GLib.build_filenamev ([malusShare, "js"]));
 // patches.
 imports.malus.patches;
 
-const Context = {};//imports.malus.context;
+
+const Context = {};
 Context["malus.argv"] = ARGV;
 Context["malus.appName"] = appName;
 
@@ -113,6 +121,9 @@ if (!gfile.query_exists(null)) {
 	log("Created directory for user configuration data at %s".format(gfile.get_path()));
 }
 
+const Injection = imports.malus.injection;
+Context["malus.injector"] = new Injection.Injector(Context);
+
 const Application = imports.malus.application;
 Context["malus.application"] = new Application.Application(Context);
 
@@ -122,21 +133,30 @@ Context["malus.settings"] = new Settings.Settings(undefined, Context);
 const Modules = imports.malus.modules;
 Context["malus.modules"] = new Modules.ModuleManager(Context);
 
-const Extensions = imports.malus.extension;
+const Extensions = imports.malus.extensions;
 Context["malus.extensions"] = new Extensions.ExtensionManager(Context);
 
-Context["malus.extensions"].addExtensionPoint("/", {
+
+Context["malus.extensions"].addExtensionPoint("/malus/root", {
 	IsSingular: true,
-	TestFunc: function(obj) { return imports.malus.iface.implements_interface(obj, {run: "function"}); }
+	TestArgs: [{run: "function"}],
+});
+Context["malus.extensions"].addExtensionPoint("/malus/shutdown-notification", {
+	TestArgs: [{shutdown: "function"}],
 });
 
-let rootExt = Context["malus.extensions"].getExtensions("/");
+
+let rootExt = Context["malus.extensions"].getExtensions("/malus/root");
 if (rootExt.length !== 1)
 	throw new Error("Exactly one root extension is required but found %d".format(rootExt.length));
 let extObj = Context["malus.extensions"].getExtensionObject(rootExt[0]);
 extObj.run(ARGV);
 
-// TODO: Send exit notification
+let shutdownHandlers = Context["malus.extensions"].getExtensions("/malus/shutdown-notification");
+for each (let handler in shutdownHandlers) {
+	let obj = Context["malus.extensions"].getExtensionObject(handler);
+	obj.shutdown();
+}
 
 Context["malus.settings"].save();
 

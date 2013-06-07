@@ -33,6 +33,9 @@ Settings.prototype = {
 		this._fn = fn;
 		this._context = context;
 		
+		this._user = {};
+		this._system = {};
+		
 		let cfgFile = Gio.file_new_for_path(GLib.build_filenamev([context["malus.paths"].config, fn]));
 		if (cfgFile.query_exists(null)) {
 			let cfg = GLib.file_get_contents(cfgFile.get_path());
