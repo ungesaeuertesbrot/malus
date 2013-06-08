@@ -19,7 +19,7 @@ function builderConnectSignals(builder, jsHandlers, that) {
 function builderConnect(builder, destEvents, destObjects, that) {
 	builderConnectSignals(builder, destEvents, that);
 	
-	for (let field in dest_objects)
+	for (let field in destObjects)
 		if (destObjects[field] === null)
 			destObjects[field] = builder.get_object(field);
 }

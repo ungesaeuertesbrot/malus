@@ -60,6 +60,14 @@ ModuleManager.prototype = {
 	},
 
 
+	getModule: function(modName) {
+		return this._modules[modName];
+	},
+	
+	getResourceContents: function(modName, resName) {
+		return this._modules[modName].provider.getResourceContents(resName);
+	},
+	
 	_decodeFunctionDescriptor: function(desc) {
 		let parts = desc.split("::");
 		if (parts.length !== 2)
