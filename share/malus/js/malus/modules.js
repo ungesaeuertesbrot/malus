@@ -93,11 +93,10 @@ ModuleManager.prototype = {
 				if (typeof this._modules[filePath] !== "undefined" && this._modules[filePath] !== null)
 					continue;
 				
-				switch (fileInfo.get_file_type()) {
-				case Gio.FileType.DIRECTORY:
+				if (fileInfo.get_file_type() === Gio.FileType.DIRECTORY)
 					moduleProviders[filePath] = new DirProvider.DirectoryModuleProvider(filePath);
-					break;
-				}
+				else
+					printerr("Module at '%s' has an unknown container format. Ignoring.".format(filePath));
 			}
 			enumerator.close(null);
 		}
