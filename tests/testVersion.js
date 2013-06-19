@@ -1,3 +1,5 @@
+imports.malus.patches;
+
 const JSUnit = imports.jsUnit;
 
 const Version = imports.malus.version;
@@ -11,7 +13,6 @@ function testCreate() {
 				  && version.minor === 1
 				  && version.revision === 1
 				  && version.point === 1);
-	JSUnit.assertEquals(version.toString(), vStr);
 	
 	vStr = "";
 	version = new Version.Version(vStr);
@@ -64,6 +65,5 @@ function testToString() {
 	JSUnit.assertEquals(version.toString(), "1.0");
 }
 
-print("foo");
 JSUnit.gjstestRun(this, JSUnit.setUp, JSUnit.tearDown);
 
