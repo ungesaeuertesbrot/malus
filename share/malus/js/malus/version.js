@@ -9,13 +9,13 @@ function Version(str)
 	this._init(str);
 }
 
-const _VERSION_FIELDS = ["major", "minor", "point", "post_point"];
+const _VERSION_FIELDS = ["major", "minor", "revision", "point"];
 
 Version.prototype = {
 	major: 0,
 	minor: 0,
+	revision: 0,
 	point: 0,
-	postPoint: 0,
 	
 	_init: function(str) {
 		let fieldValues = str.split(".");
@@ -64,10 +64,10 @@ Version.prototype = {
 	toString: function () {
 		let result;
 		
-		if (this.postPoint > 0)
-			result = "%d.%d.%d.%d".format(this.major, this.minor, this.point, this.postPoint);
-		else if (this.point > 0)
-			result = "%d.%d.%d".format(this.major, this.minor, this.point);
+		if (this.point > 0)
+			result = "%d.%d.%d.%d".format(this.major, this.minor, this.revision, this.point);
+		else if (this.revision > 0)
+			result = "%d.%d.%d".format(this.major, this.minor, this.revision);
 		else
 			result = "%d.%d".format(this.major, this.minor);
 		
