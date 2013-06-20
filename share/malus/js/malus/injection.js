@@ -26,11 +26,14 @@ Injector.prototype = {
 		}
 		
 		let destNames = keys;
-		if (!Array.isArray(keys))
+		let getDestKey = function(index) {return keys[index];};
+		if (!Array.isArray(keys)) {
 			destNames = Object.keys(keys);
+			getDestKey = function(index) {return index;};
+		}
 		for (let index in keys) {
-			let destKey = destNames[index];
 			let srcKey = keys[index];
+			let destKey = getDestKey(index);
 			if (typeof this._src[srcKey] === "undefined")
 				noWarn || printerr("!!WARNING: trying to inject '%s' which is not a defined injectable".format(srcKey));
 			else if (typeof dest[destKey] !== "undefined"
@@ -46,6 +49,8 @@ Injector.prototype = {
 	},
 	
 	addInjectable: function(key, injectable) {
+		if (typeof key !== "string")
+			throw new Error("key must be a valid string");
 		if (typeof this._src[key] !== "undefined")
 			throw new Error("injectable with key '%s' already present.".format(key));
 		this._src[key] = injectable;

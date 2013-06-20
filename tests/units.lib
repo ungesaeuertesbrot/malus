@@ -1,8 +1,0 @@
-# Test patches to core and GLib. These are used by most of the other components.
-testPatches.js
-
-# Unit tests for API
-testVersion.js
-
-# Add tests for malus program
-

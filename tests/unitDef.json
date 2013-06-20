@@ -1,0 +1,12 @@
+{
+	"tests": [
+		"testPatches",
+		"testVersion",
+		"testInjection",
+		"testIFace"
+	],
+	
+	"searchPath": [
+		"../share/malus/js"
+	]
+}

@@ -24,34 +24,67 @@ if (!match)
 
 let scriptFile = Gio.File.new_for_path(match[1]);
 let testDir = scriptFile.get_parent();
-let rootDir = testDir.get_parent();
-let malusPrefix = rootDir.resolve_relative_path("share/malus/js");
-if (!malusPrefix.query_exists(null)) {
-	printerr("Could not find malus (expected at '%s')".format(malusPrefix.get_path()));
-	System.exit();
+
+let testDef;
+let testDefFile = testDir.get_child("unitDef.json");
+if (testDefFile.query_exists(null)) {
+	let [success, testDefStr, testDefLen, eTag] = testDefFile.load_contents(null);
+	testDef = JSON.parse(testDefStr.toString());
+} else {
+	let fileList = getFilesInDir(testDir, /^test\w*\.js$/);
+	for (let i = 0; i < fileList.length; i++)
+		fileList[i] = fileList[i].substr(0, fileList[i].length);
+	
+	let srcDir = testDir.get_parent().get_child("src");
+	testDef = {
+		tests: fileList,
+		searchPath: srcDir.get_path()
+	};
 }
 
-imports.searchPath.push(malusPrefix.get_path());
+let procArgs = ["gjs-console"];
+for each (let searchPath in testDef.searchPath) {
+	if (searchPath.charAt(0) !== '/')
+		searchPath = testDir.resolve_relative_path(searchPath).get_path();
+	procArgs.push("-I", searchPath);
+}
 
-var allPassed = true;
+let allPassed = true;
 
-let testLib = testDir.get_child("units.lib");
-if (testLib.query_exists(null)) {
-	let [success, contents, contentLen, eTag] = testLib.load_contents(null);
-	let testFiles = contents.toString().split('\n');
-	for each (let fn in testFiles) {
-		fn = fn.trim();
-		if (fn.length === 0)
-			continue;
-		if (fn.charAt(0) === '#')
-			continue;
-		if (!runTests(fn)) {
-			allPassed = false;
-			break;
-		}
+for each (let test in testDef.tests) {
+	let testFileName = test + ".js";
+	procArgs.push(testFileName);
+	
+	print("Running tests from file %s…".format(testFileName));
+	
+	let [success, stdout, stderr, status] = GLib.spawn_sync(
+			testDir.get_path(),				// working directory
+			procArgs,						// argv
+			null,							// envp
+			GLib.SpawnFlags.SEARCH_PATH,	// flags
+			null,							// child setup function
+			null							// user data
+	);
+	
+	if (stdout && stdout.length > 0)
+		print("The tests said:\n%s\n".format(stdout));
+	if (stderr && stderr.length > 0)
+		printerr("JSUnit said:\n%s".format(stderr));
+	if (status !== 0) {
+		allPassed = false;
+		break;
 	}
-} else {
-	let e = testDir.enumerate_children("standard::name,standard::type", Gio.FileQueryInfoFlags.NONE, null);
+	
+	print("**********");
+	procArgs.pop();
+}
+
+log(allPassed ? "All tests passed!" : "Some tests failed! See output above.");
+
+function getFilesInDir(dir, pattern) {
+	let fileList = [];
+	
+	let e = dir.enumerate_children("standard::name,standard::type", Gio.FileQueryInfoFlags.NONE, null);
 
 	let fileInfo;
 	while ((fileInfo = e.next_file(null)) !== null) {
@@ -60,37 +93,14 @@ if (testLib.query_exists(null)) {
 			continue;
 	
 		let fn = fileInfo.get_attribute_byte_string("standard::name");
-		if (!fn.match(/^test\w*\.js$/))
+		if (pattern && !fn.match(pattern))
 			continue;
 		
-		if (!runTests(fn)) {
-			allPassed = false;
-			break;
-		}
+		fileList.push(fn);
 	}
-
+	
 	e.close(null);
-}
-
-log(allPassed ? "All tests passed." : "Some tests failed!");
-
-
-function runTests(fn) {
-	print("Running tests from file %s…".format(fn));
 	
-	let [success, stdout, stderr, status] = GLib.spawn_sync(
-			testDir.get_path(),									// working directory
-			["gjs-console", "-I", malusPrefix.get_path(), fn],	// argv
-			null,												// envp
-			GLib.SpawnFlags.SEARCH_PATH,						// flags
-			null,												// child setup function
-			null												// user data
-	);
-	
-	if (stdout && stdout.length > 0)
-		print("The tests said:\n%s\n".format(stdout));
-	if (stderr && stderr.length > 0)
-		printerr("JSUnit said:\n%s".format(stderr));
-	return status === 0;
+	return fileList;
 }
 

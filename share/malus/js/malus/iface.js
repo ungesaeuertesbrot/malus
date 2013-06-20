@@ -31,25 +31,27 @@ function implementsInterface(obj, iface)
 
 		switch (condition.type) {
 		case "array":
-			if (!((isType == "object") && (obj[member].isArray())))
+			if (!((isType == "object") && (Array.isArray(obj[member]))))
 				return false;
 			break;
 
 		case "gsignal": {
-			let GObj = imports.gi.GObject;	// do not import this where it is
-											// stricly necessary to avoid
-											// loading GObject in non-GObject
-											// apps.
-			if (GObj.signal_lookup (member, obj.constructor.$gtype) === 0)
+			let GObj = imports.gi.GObject;	// Only create module if necessary
+			if (GObj.signal_lookup(member, obj.constructor.$gtype) === 0)
 				return false;
 			break;
 		}
 		
+		case "undefined":
+			if (member in obj)
+				return false;
+			break;
+		
 		default:
 			// Only test presence of field, no matter what type
-			if (condition.type.length === 0 && isType !== "undefined")
+			if (condition.type.length === 0 && member in obj)
 				break;
-			if (isType !== condition.type)
+			if (isType !== condition.type || obj[member] === null)
 				return false
 		}
 	}
