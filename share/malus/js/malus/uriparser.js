@@ -46,7 +46,7 @@ URIParser.prototype = {
 	
 	parse: function(uri) {
 		this._uri = uri;
-		let m = _PARSERS[strict ? "strict" : "loose"].exec(uri);
+		let m = _PARSERS[this._strict ? "strict" : "loose"].exec(uri);
 		this._components = {};
 		
 		for (let i = 0; i < _KEYS.length; i++)

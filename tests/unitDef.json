@@ -3,7 +3,8 @@
 		"testPatches",
 		"testVersion",
 		"testInjection",
-		"testIFace"
+		"testIFace",
+		"testURIParser"
 	],
 	
 	"searchPath": [
