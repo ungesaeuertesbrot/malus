@@ -57,6 +57,21 @@ for each (let searchPath in testDef.searchPath) {
 	procArgs.push("-I", searchPath);
 }
 
+const DBusObject = {
+	get TestRootDir() {
+		return testDir.get_path();
+	}
+};
+
+const DBusInterface =
+'<interface name="net.schoel.malus.Test">\
+	<property name="TestRootDir" type="s" access="read" />\
+</interface>';
+
+let dbusWrappedObj = Gio.DBusExportedObject.wrapJSObject(DBusInterface, DBusObject);
+dbusWrappedObj.export(Gio.DBus.session, "/net/schoel/malus/Test");
+Gio.DBus.session.own_name("net.schoel.malus.Test", Gio.BusNameOwnerFlags.NONE, null, null);
+
 let children = [];
 let allPassed = true;
 
@@ -68,8 +83,10 @@ log(allPassed ? "All tests passed!" : "Some tests failed! See output above.");
 
 function runNextTest() {
 	let test = testDef.tests.shift();
-	if (test === undefined)
+	if (test === undefined) {
+		Mainloop.quit(MAINLOOP_ID);
 		return;
+	}
 	let testFileName = test + ".js";
 	let args = procArgs.slice(0);
 	args.push(testFileName);
@@ -79,20 +96,18 @@ function runNextTest() {
 	let success, childPid, stdin, stdout, stderr;
 	try {
 		[success, childPid, stdin, stdout, stderr] = GLib.spawn_async_with_pipes(
-				testDir.get_path(),				// working directory
-				procArgs,						// argv
-				null,							// envp
-				GLib.SpawnFlags.SEARCH_PATH | GLib.SpawnFlags.DO_NOT_REAP_CHILD,	// flags
-				null,							// child setup function
-				null							// user data
+				testDir.get_path(),						// working directory
+				args,									// argv
+				null,									// envp
+				GLib.SpawnFlags.SEARCH_PATH
+				| GLib.SpawnFlags.DO_NOT_REAP_CHILD,	// flags
+				null									// child setup function
 		);
 	} catch (e) {
 		logError(e, "Could not start test '%s'".format(testFileName));
 		Mainloop.quit(MAINLOOP_ID);
 		return;
 	}
-	
-	log("Started child process with id %d".format(childPid));
 	
 	let child = {
 		pid: childPid,
@@ -101,43 +116,42 @@ function runNextTest() {
 	};
 	
 	children.push(child);
-	GLib.child_watch_add(GLib.PRIORITY_DEFAULT, childPid, onChildFinished, null);
+	GLib.child_watch_add(GLib.PRIORITY_DEFAULT_IDLE, childPid, onChildFinished);
 }
 
 function onChildFinished(pid, status) {
-	GLib.spawn_close_pid(pid);
-	print("Finished");
 	var child;
 	for (let i = 0; i < children.length; i++) {
 		let c = children[i];
-		if (child.pid === pid) {
+		if (c.pid === pid) {
 			child = c;
 			children.splice(i, 1);
-			if (children.length === 0)
-				Mainloop.quit(MAINLOOP_ID);
 			break;
 		}
 	}
 	
-	let stdoutStream = Gio.UnixInputStream.new(child.stdout, true);
-	let stdoutReader = Gio.DataInputStream.new(stdoutStream);
-	let [stdout, stdoutLen] = stdoutReader.read_upto("", 0, null);
-	if (stdoutLen > 0)
-		print("The tests said:\n%s\n".format(stdout));
-	let stderrStream = Gio.UnixInputStream.new(child.stderr, true);
-	let stderrReader = Gio.DataInputStream.new(stderrStream);
-	let [stderr, stderrLen] = stderrReader.read_upto("", 0, null);
-	if (stderrLen > 0)
-		printerr("JSUnit said:\n%s".format(stderr));
+	let stdoutChannel = GLib.IOChannel.unix_new(child.stdout);
+	let [outStatus, outStr] = stdoutChannel.read_to_end();
+	stdoutChannel.shutdown(false);
+	if (outStr.length > 0)
+		print("The tests said:\n%s\n".format(outStr));
+	let stderrChannel = GLib.IOChannel.unix_new(child.stderr);
+	let [errStatus, errStr] = stderrChannel.read_to_end();
+	stderrChannel.shutdown(false);
+	if (errStr.length > 0)
+		print("JSUnit said:\n%s\n".format(errStr));
+
+	GLib.spawn_close_pid(pid);
 	
 	print("**********");
 
 	try {
-		if (!GLib.spawn_check_exit_status(pid))
-			throw "";
+		GLib.spawn_check_exit_status(status);
 	} catch (e) {
 		allPassed = false;
 	}
+	
+	runNextTest();
 }
 
 function getFilesInDir(dir, pattern) {
