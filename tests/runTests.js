@@ -1,8 +1,11 @@
 const System = imports.system;
 const JSUnit = imports.jsUnit;
+const Mainloop = imports.mainloop;
 
 const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
+
+const MAINLOOP_ID = "malusTestLoop";
 
 String.prototype.format = imports.format.format;
 
@@ -42,6 +45,11 @@ if (testDefFile.query_exists(null)) {
 	};
 }
 
+if (testDef.tests.length === 0) {
+	log("No tests defined. Aborting.");
+	System.exit(-1);
+}
+
 let procArgs = ["gjs-console"];
 for each (let searchPath in testDef.searchPath) {
 	if (searchPath.charAt(0) !== '/')
@@ -49,37 +57,88 @@ for each (let searchPath in testDef.searchPath) {
 	procArgs.push("-I", searchPath);
 }
 
+let children = [];
 let allPassed = true;
 
-for each (let test in testDef.tests) {
+runNextTest();
+
+Mainloop.run(MAINLOOP_ID);
+
+log(allPassed ? "All tests passed!" : "Some tests failed! See output above.");
+
+function runNextTest() {
+	let test = testDef.tests.shift();
+	if (test === undefined)
+		return;
 	let testFileName = test + ".js";
-	procArgs.push(testFileName);
+	let args = procArgs.slice(0);
+	args.push(testFileName);
 	
 	print("Running tests from file %s…".format(testFileName));
 	
-	let [success, stdout, stderr, status] = GLib.spawn_sync(
-			testDir.get_path(),				// working directory
-			procArgs,						// argv
-			null,							// envp
-			GLib.SpawnFlags.SEARCH_PATH,	// flags
-			null,							// child setup function
-			null							// user data
-	);
-	
-	if (stdout && stdout.length > 0)
-		print("The tests said:\n%s\n".format(stdout));
-	if (stderr && stderr.length > 0)
-		printerr("JSUnit said:\n%s".format(stderr));
-	if (status !== 0) {
-		allPassed = false;
-		break;
+	let success, childPid, stdin, stdout, stderr;
+	try {
+		[success, childPid, stdin, stdout, stderr] = GLib.spawn_async_with_pipes(
+				testDir.get_path(),				// working directory
+				procArgs,						// argv
+				null,							// envp
+				GLib.SpawnFlags.SEARCH_PATH | GLib.SpawnFlags.DO_NOT_REAP_CHILD,	// flags
+				null,							// child setup function
+				null							// user data
+		);
+	} catch (e) {
+		logError(e, "Could not start test '%s'".format(testFileName));
+		Mainloop.quit(MAINLOOP_ID);
+		return;
 	}
 	
-	print("**********");
-	procArgs.pop();
+	log("Started child process with id %d".format(childPid));
+	
+	let child = {
+		pid: childPid,
+		stdout: stdout,
+		stderr:stderr
+	};
+	
+	children.push(child);
+	GLib.child_watch_add(GLib.PRIORITY_DEFAULT, childPid, onChildFinished, null);
 }
 
-log(allPassed ? "All tests passed!" : "Some tests failed! See output above.");
+function onChildFinished(pid, status) {
+	GLib.spawn_close_pid(pid);
+	print("Finished");
+	var child;
+	for (let i = 0; i < children.length; i++) {
+		let c = children[i];
+		if (child.pid === pid) {
+			child = c;
+			children.splice(i, 1);
+			if (children.length === 0)
+				Mainloop.quit(MAINLOOP_ID);
+			break;
+		}
+	}
+	
+	let stdoutStream = Gio.UnixInputStream.new(child.stdout, true);
+	let stdoutReader = Gio.DataInputStream.new(stdoutStream);
+	let [stdout, stdoutLen] = stdoutReader.read_upto("", 0, null);
+	if (stdoutLen > 0)
+		print("The tests said:\n%s\n".format(stdout));
+	let stderrStream = Gio.UnixInputStream.new(child.stderr, true);
+	let stderrReader = Gio.DataInputStream.new(stderrStream);
+	let [stderr, stderrLen] = stderrReader.read_upto("", 0, null);
+	if (stderrLen > 0)
+		printerr("JSUnit said:\n%s".format(stderr));
+	
+	print("**********");
+
+	try {
+		if (!GLib.spawn_check_exit_status(pid))
+			throw "";
+	} catch (e) {
+		allPassed = false;
+	}
+}
 
 function getFilesInDir(dir, pattern) {
 	let fileList = [];
