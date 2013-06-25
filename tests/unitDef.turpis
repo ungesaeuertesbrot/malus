@@ -1,0 +1,13 @@
+{
+	"tests": [
+		"Patches",
+		"Version",
+		"Injection",
+		"IFace",
+		"URIParser"
+	],
+	
+	"searchPath": [
+		"../share/malus/js"
+	]
+}
